@@ -1081,7 +1081,13 @@ func (r *reflectValue) SetTag(code uint64, val DecodeValue, decoder TagDecoder, 
 			return err
 		}
 	}
-	reflect.Indirect(rv).Set(reflect.ValueOf(target))
+
+	// ensure we are not decoding into a nil pointer
+	if !reflect.Indirect(rv).IsValid() {
+		rv.Set(reflect.New(rv.Type().Elem()))
+	}
+
+	reflect.Indirect(rv).Set(reflect.Indirect(reflect.ValueOf(target)))
 	return nil
 }
 
