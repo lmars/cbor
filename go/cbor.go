@@ -95,7 +95,7 @@ type TagDecoder interface {
 	// Run after decode onto DecodeTarget has happened.
 	// The return value from this is returned in place of the
 	// raw decoded object.
-	PostDecode(interface{}) (interface{}, error)
+	PostDecode(interface{}, reflect.Value) (interface{}, error)
 }
 
 type Decoder struct {
@@ -1074,17 +1074,18 @@ func (r *reflectValue) CreateTag(aux uint64, decoder TagDecoder) (DecodeValue, i
 
 func (r *reflectValue) SetTag(code uint64, val DecodeValue, decoder TagDecoder, target interface{}) error {
 	rv := r.v
-	var err error
-	if decoder != nil {
-		target, err = decoder.PostDecode(target)
-		if err != nil {
-			return err
-		}
-	}
 
 	// ensure we are not decoding into a nil pointer
 	if !reflect.Indirect(rv).IsValid() {
 		rv.Set(reflect.New(rv.Type().Elem()))
+	}
+
+	var err error
+	if decoder != nil {
+		target, err = decoder.PostDecode(target, rv)
+		if err != nil {
+			return err
+		}
 	}
 
 	reflect.Indirect(rv).Set(reflect.Indirect(reflect.ValueOf(target)))
